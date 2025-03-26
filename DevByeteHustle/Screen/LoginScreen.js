@@ -1,68 +1,153 @@
-// screens/LoginScreen.js
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Alert 
+} from 'react-native';
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth"; 
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
-const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginPage({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
+    const auth = getAuth();
+    const db = getFirestore();
+
     try {
+      // Authenticate user
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        alert("Please verify your email before logging in.");
-        return;
-      }
+      // Fetch user's role from Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      alert("Login successful!");
-      // Navigate to dashboard or home screen
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const { role } = userData;
+
+        // Navigate based on role
+        if (role === 'employer') {
+          Alert.alert("Welcome Employer!");
+          navigation.navigate('EmployerDashboard');
+        } else if (role === 'employee') {
+          Alert.alert("Welcome Employee!");
+          navigation.navigate('EmployeeDashboard');
+        } else {
+          Alert.alert("Role Not Found", "Contact Support for Assistance.");
+        }
+      } else {
+        Alert.alert("User Data Not Found", "Please complete your registration.");
+      }
     } catch (error) {
-      alert(error.message);
+      Alert.alert("Login Error", error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login to DevBytesHustle</Text>
-
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.heading}>Login</Text>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Email</Text>
+        <TextInput 
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Password</Text>
+        <TextInput 
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Enter your password"
+          secureTextEntry
+        />
+      </View>
+      
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate("Auth")}>
-        <Text style={styles.footer}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+      
+      <View style={styles.signupContainer}>
+        <Text style={styles.signupText}>
+          Don't have an account?{' '}
+          <Text 
+            style={styles.signupLink} 
+            onPress={() => navigation.navigate('Signup')}
+          >
+            Sign Up
+          </Text>
+        </Text>
+      </View>
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center", backgroundColor: "#fff" },
-  title: { fontSize: 32, fontWeight: "bold", textAlign: "center", marginBottom: 40 },
-  input: { backgroundColor: "#f0f0f0", padding: 12, borderRadius: 8, marginBottom: 20 },
-  button: { backgroundColor: "#197fe6", padding: 15, borderRadius: 8, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  footer: { textAlign: "center", marginTop: 20, color: "gray" },
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    paddingBottom: 40,
+  },
+  heading: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    marginBottom: 30,
+    marginTop: -30,
+  },
+  formGroup: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    fontSize: 16,
+  },
+  loginButton: {
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    borderRadius: 15,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  signupContainer: {
+    alignItems: 'center',
+  },
+  signupText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  signupLink: {
+    color: '#4285F4',
+    fontWeight: 'bold',
+  },
 });
-
-export default LoginScreen;

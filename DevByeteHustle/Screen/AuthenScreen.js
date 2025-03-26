@@ -54,7 +54,12 @@ const AuthScreen = ({ navigation }) => {
 
       await sendEmailVerification(user);
       alert("Signup successful! Please verify your email before logging in.");
-      navigation.navigate("Login");
+
+      if (role === "employer") {
+        navigation.navigate("EmployerDashboard");
+      } else {
+        navigation.navigate("EmployeeDashboard");
+      }
     } catch (error) {
       console.error("Error during signup:", error);
       alert(`Signup failed: ${error.message}`);
