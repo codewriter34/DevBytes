@@ -28,44 +28,45 @@ const AuthScreen = ({ navigation }) => {
       alert("Please accept the terms and conditions");
       return;
     }
-
+  
     try {
       if (!auth || !db) {
         console.error("Firebase is not initialized correctly.");
         alert("Internal error: Firebase is not initialized.");
         return;
       }
-
+  
       console.log("Starting user registration...");
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+  
       console.log("User registered successfully:", user.uid);
-
+  
+      // Store user data in Firestore
       await addDoc(collection(db, "users"), {
         uid: user.uid,
         firstName,
         email,
         phone,
         role,
+        createdAt: new Date(),
       });
-
+  
       console.log("User data stored in Firestore:", { firstName, email, phone, role });
-
+  
+      // Send email verification
       await sendEmailVerification(user);
       alert("Signup successful! Please verify your email before logging in.");
-
-      if (role === "employer") {
-        navigation.navigate("EmployerDashboard");
-      } else {
-        navigation.navigate("EmployeeDashboard");
-      }
+  
+      // Navigate to Login Screen instead of Dashboard
+      navigation.navigate("Login");
+  
     } catch (error) {
       console.error("Error during signup:", error);
       alert(`Signup failed: ${error.message}`);
     }
   };
-
+  
   const handleLoginNavigation = () => {
     navigation.navigate("Login");
   };
