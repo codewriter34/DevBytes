@@ -1,105 +1,109 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { collection, addDoc } from "firebase/firestore";
-import { db } from './App'; // Import Firestore database
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Alert
+} from "react-native";
+import { addDoc, collection } from "firebase/firestore";
+import { auth, db } from "../../firebaseConfig";
 
 const PostJobScreen = ({ navigation }) => {
-  const [jobTitle, setJobTitle] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [jobLocation, setJobLocation] = useState('');
-  const [workType, setWorkType] = useState('Remote');
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [salary, setSalary] = useState("");
+  const [jobType, setJobType] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [skills, setSkills] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [budget, setBudget] = useState("");
 
-  const handleSubmit = async () => {
-    if (!jobTitle || !jobDescription || !jobLocation) {
-      Alert.alert("Error", "Please fill all fields!");
+  const handlePostJob = async () => {
+    if (!jobTitle || !jobDescription || !location || !salary || !jobType || !experienceLevel || !skills || !timeline || !budget) {
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     try {
-      // Add job details to Firestore
       await addDoc(collection(db, "jobs"), {
         jobTitle,
         jobDescription,
-        jobLocation,
-        workType,
-        createdAt: new Date(),
+        location,
+        salary,
+        jobType,
+        experienceLevel,
+        skills: skills.split(","),
+        timeline,
+        budget,
+        createdAt: new Date()
       });
 
       Alert.alert("Success", "Job posted successfully!");
-      navigation.goBack(); // Navigate back after submission
+      navigation.navigate("EmployerHome");
     } catch (error) {
-      console.error("Error adding job: ", error);
-      Alert.alert("Error", "Failed to post job!");
+      console.error("Error posting job:", error);
+      Alert.alert("Error", "Failed to post job. Please try again later.");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Post a New Job</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={styles.innerContainer}>
+          <Text style={styles.title}>Post a Job</Text>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Job Title" 
-        value={jobTitle} 
-        onChangeText={setJobTitle} 
-      />
+          {[{ label: "Job Title", value: jobTitle, setter: setJobTitle },
+            { label: "Job Description", value: jobDescription, setter: setJobDescription, multiline: true },
+            { label: "Location", value: location, setter: setLocation },
+            { label: "Salary (USD)", value: salary, setter: setSalary, keyboardType: "numeric" },
+            { label: "Job Type (e.g., Fixed, Hourly)", value: jobType, setter: setJobType },
+            { label: "Experience Level (e.g., Beginner, Expert)", value: experienceLevel, setter: setExperienceLevel },
+            { label: "Skills (comma-separated)", value: skills, setter: setSkills },
+            { label: "Timeline (e.g., 2 weeks)", value: timeline, setter: setTimeline },
+            { label: "Budget (USD)", value: budget, setter: setBudget, keyboardType: "numeric" }
+          ].map((item, index) => (
+            <View key={index}>
+              <Text style={styles.label}>{item.label}</Text>
+              <TextInput
+                placeholder={`Enter ${item.label}`}
+                value={item.value}
+                onChangeText={item.setter}
+                style={[styles.input, item.multiline && styles.textArea]}
+                keyboardType={item.keyboardType || "default"}
+                multiline={item.multiline || false}
+              />
+            </View>
+          ))}
 
-      <TextInput 
-        style={[styles.input, styles.textArea]} 
-        placeholder="Job Description" 
-        multiline 
-        numberOfLines={4} 
-        value={jobDescription} 
-        onChangeText={setJobDescription} 
-      />
-
-      <TextInput 
-        style={styles.input} 
-        placeholder="Job Location" 
-        value={jobLocation} 
-        onChangeText={setJobLocation} 
-      />
-
-      {/* Work Type Selection */}
-      <View style={styles.workTypeContainer}>
-        {["Remote", "Onsite", "Hybrid"].map((type) => (
-          <TouchableOpacity 
-            key={type} 
-            style={[styles.workTypeButton, workType === type && styles.selectedWorkType]} 
-            onPress={() => setWorkType(type)}
-          >
-            <Text style={styles.workTypeText}>{type}</Text>
+          <TouchableOpacity style={styles.button} onPress={handlePostJob}>
+            <Text style={styles.buttonText}>Post Job</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Post Job</Text>
-      </TouchableOpacity>
-    </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 20 },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#ccc', 
-    borderRadius: 5, 
-    padding: 10, 
-    marginBottom: 15 
-  },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  
-  workTypeContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  workTypeButton: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 },
-  selectedWorkType: { backgroundColor: '#007BFF', borderColor: '#007BFF' },
-  workTypeText: { color: '#000' },
-
-  submitButton: { backgroundColor: '#007BFF', padding: 15, borderRadius: 5, alignItems: 'center' },
-  submitButtonText: { color: '#fff', fontWeight: 'bold' }
+  container: { flex: 1 },
+  innerContainer: { padding: 20 },
+  title: { fontSize: 32, fontWeight: "bold", marginBottom: 30, textAlign: "center", color: "#197fe6" },
+  label: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
+  input: { backgroundColor: "#f8f8f8", padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: "#ddd" },
+  textArea: { height: 120 },
+  button: { backgroundColor: "#197fe6", padding: 18, borderRadius: 12, alignItems: "center", marginTop: 20 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 18 }
 });
 
 export default PostJobScreen;
