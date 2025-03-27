@@ -5,6 +5,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db } from '../../firebaseConfig';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import CryptoJS from 'crypto-js';
+
+// Define a key for encryption (should be stored securely)
+const encryptionKey = 'your-encryption-key';
 
 const EmployerHome = () => {
   const navigation = useNavigation();
@@ -68,13 +72,21 @@ const EmployerHome = () => {
   const handleVerifyAccount = async () => {
     const user = auth.currentUser;
     if (user) {
+      // Encrypt KYC data
+      const encryptedKycName = CryptoJS.AES.encrypt(kycName, encryptionKey).toString();
+      const encryptedKycPhone = CryptoJS.AES.encrypt(kycPhone, encryptionKey).toString();
+      const encryptedKycAddress = CryptoJS.AES.encrypt(kycAddress, encryptionKey).toString();
+      const encryptedFrontIDImage = frontIDImage ? CryptoJS.AES.encrypt(frontIDImage, encryptionKey).toString() : null;
+      const encryptedBackIDImage = backIDImage ? CryptoJS.AES.encrypt(backIDImage, encryptionKey).toString() : null;
+      const encryptedHoldingIDImage = holdingIDImage ? CryptoJS.AES.encrypt(holdingIDImage, encryptionKey).toString() : null;
+
       await updateDoc(doc(db, 'users', user.uid), {
-        kycName,
-        kycPhone,
-        kycAddress,
-        frontIDImage,
-        backIDImage,
-        holdingIDImage,
+        kycName: encryptedKycName,
+        kycPhone: encryptedKycPhone,
+        kycAddress: encryptedKycAddress,
+        frontIDImage: encryptedFrontIDImage,
+        backIDImage: encryptedBackIDImage,
+        holdingIDImage: encryptedHoldingIDImage,
         email: user.email,
         isVerified: false,
       });
@@ -86,11 +98,16 @@ const EmployerHome = () => {
   const handleAddBalance = async () => {
     const user = auth.currentUser;
     if (user && senderName && transactionDate && amount) {
+      // Encrypt balance data
+      const encryptedSenderName = CryptoJS.AES.encrypt(senderName, encryptionKey).toString();
+      const encryptedTransactionDate = CryptoJS.AES.encrypt(transactionDate, encryptionKey).toString();
+      const encryptedAmount = CryptoJS.AES.encrypt(amount, encryptionKey).toString();
+
       await addDoc(collection(db, 'balance'), {
         userId: user.uid,
-        senderName,
-        transactionDate,
-        amount,
+        senderName: encryptedSenderName,
+        transactionDate: encryptedTransactionDate,
+        amount: encryptedAmount,
       });
       Alert.alert('Balance Submitted', 'Your balance information has been submitted.');
       setBalanceModalVisible(false);
@@ -113,11 +130,11 @@ const EmployerHome = () => {
       <View style={styles.statsContainer}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Total job views</Text>
-          <Text style={styles.cardNumber}>12</Text>
+          <Text style={styles.cardNumber}>2</Text>
         </View>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Total applications</Text>
-          <Text style={styles.cardNumber}>6</Text>
+          <Text style={styles.cardNumber}>3</Text>
         </View>
       </View>
 
@@ -125,7 +142,7 @@ const EmployerHome = () => {
       <View style={styles.balanceCard}>
         <View>
           <Text style={styles.cardTitle}>Balance</Text>
-          <Text style={styles.cardNumber}>${balance}</Text>
+          <Text style={styles.cardNumber}>XAF{balance}</Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={() => setBalanceModalVisible(true)}>
           <Text style={styles.addButtonText}>Add Balance</Text>
