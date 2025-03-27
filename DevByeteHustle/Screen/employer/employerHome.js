@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, BackHandler, Modal, TextInput, Button, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler, Modal, TextInput, Button, Alert, Image, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db } from '../../firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 
 const EmployerHome = () => {
   const navigation = useNavigation();
   const [balance, setBalance] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [balanceModalVisible, setBalanceModalVisible] = useState(false);
+  const [senderName, setSenderName] = useState('');
+  const [transactionDate, setTransactionDate] = useState('');
+  const [amount, setAmount] = useState('');
   const [kycName, setKycName] = useState('');
   const [kycPhone, setKycPhone] = useState('');
   const [kycAddress, setKycAddress] = useState('');
@@ -79,6 +83,25 @@ const EmployerHome = () => {
     }
   };
 
+  const handleAddBalance = async () => {
+    const user = auth.currentUser;
+    if (user && senderName && transactionDate && amount) {
+      await addDoc(collection(db, 'balance'), {
+        userId: user.uid,
+        senderName,
+        transactionDate,
+        amount,
+      });
+      Alert.alert('Balance Submitted', 'Your balance information has been submitted.');
+      setBalanceModalVisible(false);
+      setSenderName('');
+      setTransactionDate('');
+      setAmount('');
+    } else {
+      Alert.alert('Error', 'Please fill in all fields.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -104,10 +127,7 @@ const EmployerHome = () => {
           <Text style={styles.cardTitle}>Balance</Text>
           <Text style={styles.cardNumber}>${balance}</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={() => navigation.navigate('AddMoney', { setBalance })}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={() => setBalanceModalVisible(true)}>
           <Text style={styles.addButtonText}>Add Balance</Text>
         </TouchableOpacity>
       </View>
@@ -164,6 +184,46 @@ const EmployerHome = () => {
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Add Balance Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={balanceModalVisible}
+        onRequestClose={() => setBalanceModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Add Balance</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Sender Name"
+              value={senderName}
+              onChangeText={setSenderName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Transaction Date"
+              value={transactionDate}
+              onChangeText={setTransactionDate}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Amount"
+              value={amount}
+              onChangeText={setAmount}
+            />
+            <Text style={styles.infoText}>
+              Add money to balance{" "}
+              <Text style={styles.linkText} onPress={() => Linking.openURL('https://checkout.fapshi.com/link/00475489')}>
+                here
+              </Text>
+            </Text>
+            <Button title="Submit" onPress={handleAddBalance} />
+            <Button title="Cancel" color="red" onPress={() => setBalanceModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
 
       {/* KYC Modal */}
       <Modal
@@ -287,6 +347,15 @@ const styles = StyleSheet.create({
   },
   imagePickerText: { color: '#fff', fontWeight: 'bold' },
   image: { width: 100, height: 100, marginBottom: 10 },
+  infoText: {
+    fontSize: 14,
+    color: 'gray',
+    marginBottom: 10,
+  },
+  linkText: {
+    color: '#007BFF',
+    textDecorationLine: 'underline',
+  },
 });
 
 export default EmployerHome;

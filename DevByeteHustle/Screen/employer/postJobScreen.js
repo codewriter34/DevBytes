@@ -66,12 +66,12 @@ const PostJobScreen = ({ navigation }) => {
           {[{ label: "Job Title", value: jobTitle, setter: setJobTitle },
             { label: "Job Description", value: jobDescription, setter: setJobDescription, multiline: true },
             { label: "Location", value: location, setter: setLocation },
-            { label: "Salary (USD)", value: salary, setter: setSalary, keyboardType: "numeric" },
+            { label: "Salary (XAF)", value: salary, setter: setSalary, keyboardType: "numeric" },
             { label: "Job Type (e.g., Fixed, Hourly)", value: jobType, setter: setJobType },
             { label: "Experience Level (e.g., Beginner, Expert)", value: experienceLevel, setter: setExperienceLevel },
             { label: "Skills (comma-separated)", value: skills, setter: setSkills },
             { label: "Timeline (e.g., 2 weeks)", value: timeline, setter: setTimeline },
-            { label: "Budget (USD)", value: budget, setter: setBudget, keyboardType: "numeric" }
+            { label: "Budget (XAF)", value: budget, setter: setBudget, keyboardType: "numeric" }
           ].map((item, index) => (
             <View key={index}>
               <Text style={styles.label}>{item.label}</Text>
