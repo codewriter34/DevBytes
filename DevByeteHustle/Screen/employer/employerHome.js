@@ -1,20 +1,89 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler, Modal, TextInput, Button, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
+import * as ImagePicker from 'expo-image-picker';
+import { auth, db } from '../../firebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 const EmployerHome = () => {
   const navigation = useNavigation();
   const [balance, setBalance] = useState(0);
+  const [isVerified, setIsVerified] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [kycName, setKycName] = useState('');
+  const [kycPhone, setKycPhone] = useState('');
+  const [kycAddress, setKycAddress] = useState('');
+  const [frontIDImage, setFrontIDImage] = useState(null);
+  const [backIDImage, setBackIDImage] = useState(null);
+  const [holdingIDImage, setHoldingIDImage] = useState(null);
+
+  useEffect(() => {
+    const backAction = () => false; // Disable back navigation
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    const fetchVerificationStatus = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setIsVerified(userDoc.data().isVerified);
+        }
+      }
+    };
+
+    fetchVerificationStatus();
+
+    return () => backHandler.remove();
+  }, []);
+
+  const pickImage = async (setImage) => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access the media library is required.');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled) {
+        setImage(result.uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'An error occurred while picking the image.');
+    }
+  };
+
+  const handleVerifyAccount = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      await updateDoc(doc(db, 'users', user.uid), {
+        kycName,
+        kycPhone,
+        kycAddress,
+        frontIDImage,
+        backIDImage,
+        holdingIDImage,
+        email: user.email,
+        isVerified: false,
+      });
+      Alert.alert('KYC Submitted', 'Your KYC information has been submitted for verification.');
+      setModalVisible(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Dev Bytes Hustlers</Text>
-        <TouchableOpacity>
-          <Icon name="bell" size={24} color="#000" />
-        </TouchableOpacity>
       </View>
 
       {/* Stats Cards */}
@@ -55,30 +124,105 @@ const EmployerHome = () => {
         <Icon name="plus-square" size={20} color="#000" />
         <Text style={styles.actionText}>Post a new job</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.actionItem}>
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('ViewApplicationsScreen')}>
         <Icon name="arrow-right" size={20} color="#000" />
         <Text style={styles.actionText}>View applications</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.actionItem}>
+      <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('MyJobsScreen')}>
         <Icon name="briefcase" size={20} color="#000" />
         <Text style={styles.actionText}>My Jobs</Text>
       </TouchableOpacity>
+
+      {isVerified ? (
+        <View style={styles.actionItem}>
+          <Icon name="check-circle" size={20} color="green" />
+          <Text style={[styles.actionText, { color: "green" }]}>Account Verified</Text>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.actionItem} onPress={() => setModalVisible(true)}>
+          <Icon name="check-circle" size={20} color="red" />
+          <Text style={[styles.actionText, { color: "red" }]}>Verify your account</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Bottom Navbar */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity onPress={() => navigation.navigate('EmployerHome')}>
+          <Icon name="home" size={24} color="#197fe6" />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ViewApplicationsScreen')}>
+          <Icon name="users" size={24} color="#000" />
+          <Text style={styles.navText}>View Applicants</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('PostJobScreen')}>
+          <Icon name="plus-square" size={24} color="#000" />
+          <Text style={styles.navText}>Post Jobs</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Icon name="user" size={24} color="#000" />
+          <Text style={styles.navText}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* KYC Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Verify Your Account</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              value={kycName}
+              onChangeText={setKycName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number"
+              value={kycPhone}
+              onChangeText={setKycPhone}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Address"
+              value={kycAddress}
+              onChangeText={setKycAddress}
+            />
+            <TouchableOpacity style={styles.imagePicker} onPress={() => pickImage(setFrontIDImage)}>
+              <Text style={styles.imagePickerText}>Pick Front ID Image</Text>
+            </TouchableOpacity>
+            {frontIDImage && <Image source={{ uri: frontIDImage }} style={styles.image} />}
+            <TouchableOpacity style={styles.imagePicker} onPress={() => pickImage(setBackIDImage)}>
+              <Text style={styles.imagePickerText}>Pick Back ID Image</Text>
+            </TouchableOpacity>
+            {backIDImage && <Image source={{ uri: backIDImage }} style={styles.image} />}
+            <TouchableOpacity style={styles.imagePicker} onPress={() => pickImage(setHoldingIDImage)}>
+              <Text style={styles.imagePickerText}>Pick Image Holding ID</Text>
+            </TouchableOpacity>
+            {holdingIDImage && <Image source={{ uri: holdingIDImage }} style={styles.image} />}
+            <Button title="Submit" onPress={handleVerifyAccount} />
+            <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-// Styles (same as before)
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' },
   title: { fontSize: 18, fontWeight: 'bold' },
   statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
   card: { flex: 1, padding: 20, backgroundColor: '#f5f5f5', borderRadius: 10, marginRight: 10 },
   cardTitle: { fontSize: 14, color: '#666' },
   cardNumber: { fontSize: 22, fontWeight: 'bold' },
   singleCard: { padding: 20, backgroundColor: '#f5f5f5', borderRadius: 10, marginTop: 10 },
-
-  // Balance Card
   balanceCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -95,10 +239,54 @@ const styles = StyleSheet.create({
     borderRadius: 5 
   },
   addButtonText: { color: '#fff', fontWeight: 'bold' },
-
   sectionTitle: { fontSize: 16, fontWeight: 'bold', marginTop: 20 },
   actionItem: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
   actionText: { marginLeft: 10, fontSize: 16 },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+    backgroundColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    marginBottom: 17,
+  },
+  navText: { fontSize: 12, marginTop: 4, textAlign: 'center' },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    width: '80%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20 },
+  input: {
+    width: '100%',
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  imagePicker: {
+    backgroundColor: '#007BFF',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  imagePickerText: { color: '#fff', fontWeight: 'bold' },
+  image: { width: 100, height: 100, marginBottom: 10 },
 });
 
 export default EmployerHome;

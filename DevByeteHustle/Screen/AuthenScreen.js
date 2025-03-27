@@ -9,10 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
+  Alert,
+  Pressable
 } from "react-native";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { collection, addDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 
 const AuthScreen = ({ navigation }) => {
@@ -20,28 +22,38 @@ const AuthScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("employee");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [role, setRole] = useState("employee");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [adminButtonVisible, setAdminButtonVisible] = useState(false);
 
+  // Utility function to fetch user data from Firestore
+  const fetchUserDataFromFirestore = async (uid) => {
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('uid', '==', uid));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data();
+    } else {
+      throw new Error('User data not found');
+    }
+  };
+
+  // Signup handler
   const handleSignup = async () => {
     if (!acceptedTerms) {
-      alert("Please accept the terms and conditions");
+      Alert.alert("Error", "Please accept the terms and conditions");
       return;
     }
-  
+
     try {
-      if (!auth || !db) {
-        console.error("Firebase is not initialized correctly.");
-        alert("Internal error: Firebase is not initialized.");
-        return;
-      }
-  
-      console.log("Starting user registration...");
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-  
-      console.log("User registered successfully:", user.uid);
-  
+
+      // Send verification email
+      await sendEmailVerification(user);
+
       // Store user data in Firestore
       await addDoc(collection(db, "users"), {
         uid: user.uid,
@@ -51,24 +63,83 @@ const AuthScreen = ({ navigation }) => {
         role,
         createdAt: new Date(),
       });
-  
-      console.log("User data stored in Firestore:", { firstName, email, phone, role });
-  
-      // Send email verification
-      await sendEmailVerification(user);
-      alert("Signup successful! Please verify your email before logging in.");
-  
-      // Navigate to Login Screen instead of Dashboard
+
+      Alert.alert("Success", "Signup successful! Please verify your email before logging in.");
       navigation.navigate("Login");
-  
+
     } catch (error) {
       console.error("Error during signup:", error);
-      alert(`Signup failed: ${error.message}`);
+      Alert.alert("Error", error.message);
     }
   };
-  
+
+  // Login handler
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setErrorMessage('Please fill in all fields.');
+      return;
+    }
+
+    try {
+      console.log("Attempting to log in with email:", email);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log("User logged in:", user.uid);
+
+      // Check if the email is verified
+      if (!user.emailVerified) {
+        setErrorMessage('Please verify your email before logging in.');
+        await signOut(auth);
+        return;
+      }
+
+      // Fetch user data from Firestore
+      try {
+        console.log("Fetching user data from Firestore for UID:", user.uid);
+        const userData = await fetchUserDataFromFirestore(user.uid);
+        const role = userData.role;
+        console.log("User role retrieved from Firestore:", role);
+
+        Alert.alert('Success', 'Logged in successfully!');
+
+        // Redirect based on role
+        switch (role.toLowerCase()) {
+          case 'employee':
+            navigation.replace('EmployeeDashboard'); // Adjust this to the correct employee screen
+            break;
+          case 'employer':
+            navigation.replace('EmployerDashboard'); // Adjust this to the correct employer screen
+            break;
+          default:
+            setErrorMessage('User role not recognized. Please contact support.');
+        }
+      } catch (error) {
+        console.error("Error fetching user data from Firestore:", error);
+        setErrorMessage('User data not found. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Firebase Error:', error);
+      if (error.code === 'auth/user-not-found') {
+        setErrorMessage('No user found with this email.');
+      } else if (error.code === 'auth/wrong-password') {
+        setErrorMessage('Incorrect password.');
+      } else {
+        setErrorMessage('An unexpected error occurred. Please try again.');
+      }
+    }
+  };
+
   const handleLoginNavigation = () => {
     navigation.navigate("Login");
+  };
+
+  // Direct Access to Admin Section (for MVP/demo purposes)
+  const handleAdminAccess = () => {
+    navigation.replace('AdminDashboard');
+  };
+
+  const handleLongPress = () => {
+    setAdminButtonVisible(true);
   };
 
   return (
@@ -134,6 +205,10 @@ const AuthScreen = ({ navigation }) => {
             <Text style={acceptedTerms ? styles.selected : styles.checkboxText}>✔ Accept our Terms and Conditions</Text>
           </TouchableOpacity>
 
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
+
           <TouchableOpacity style={styles.button} onPress={handleSignup}>
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
@@ -141,6 +216,18 @@ const AuthScreen = ({ navigation }) => {
           <TouchableOpacity onPress={handleLoginNavigation}>
             <Text style={styles.footer}>Already have an account? Login</Text>
           </TouchableOpacity>
+
+          {/* Hidden Admin Access Button */}
+          {adminButtonVisible && (
+            <TouchableOpacity style={styles.adminButton} onPress={handleAdminAccess}>
+              <Text style={styles.adminButtonText}>Access Admin Section</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Long press area to reveal the admin button */}
+          <Pressable onLongPress={handleLongPress} style={styles.hiddenArea}>
+            <Text style={styles.hiddenText}>Long press here to reveal admin access</Text>
+          </Pressable>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -155,13 +242,18 @@ const styles = StyleSheet.create({
   description: { textAlign: "center", marginBottom: 20, color: "gray" },
   label: { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
   input: { backgroundColor: "#f0f0f0", padding: 12, borderRadius: 8, marginBottom: 10 },
-  checkboxContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  checkboxText: { fontSize: 16, color: "gray" },
-  selected: { fontSize: 16, fontWeight: "bold", color: "#197fe6" },
+  errorText: { color: 'red', fontSize: 16, marginBottom: 10, textAlign: 'center' },
   termsContainer: { marginBottom: 20 },
   button: { backgroundColor: "#197fe6", padding: 15, borderRadius: 8, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   footer: { textAlign: "center", marginTop: 20, color: "gray" },
+  checkboxContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
+  checkboxText: { fontSize: 16, color: "gray" },
+  selected: { fontSize: 16, fontWeight: "bold", color: "#197fe6" },
+  adminButton: { backgroundColor: "red", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 20 },
+  adminButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  hiddenArea: { marginTop: 30, padding: 10, backgroundColor: 'transparent', alignItems: 'center' },
+  hiddenText: { color: 'transparent' }, // Make the text invisible
 });
 
 export default AuthScreen;
