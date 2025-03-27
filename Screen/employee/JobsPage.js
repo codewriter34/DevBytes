@@ -35,7 +35,7 @@ export default function JobsPage({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.categoryContainer}>
+      {/* <View style={styles.categoryContainer}>
         <Text style={styles.categoryLabel}>Search by:</Text>
         <Picker
           selectedValue={selectedCategory}
@@ -46,7 +46,7 @@ export default function JobsPage({ navigation }) {
           <Picker.Item label="Job Title" value="title" />
           <Picker.Item label="Location" value="location" />
         </Picker>
-      </View>
+      </View> */}
 
       <FlatList
         data={filteredJobs}
@@ -66,23 +66,30 @@ export default function JobsPage({ navigation }) {
         ListEmptyComponent={<Text style={styles.noJobsText}>No jobs available</Text>}
       />
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => navigation.navigate('EmployeeHome')}>
-          <Icon name="home" size={24} color="#007BFF" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Jobs')}>
-          <Icon name="briefcase" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Messages')}>
-          <Icon name="message-circle" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Earnings')}>
-          <Icon name="dollar-sign" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('ProfilePage')}>
-          <Icon name="user" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      {/* Bottom Navigation Bar */}
+<View style={styles.bottomNav}>
+  <TouchableOpacity onPress={() => navigation.navigate("employeeHome")} style={styles.navItem}>
+    <Icon name="home" size={24} color="#000" />
+    <Text style={styles.navText}>Home</Text>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={() => navigation.navigate("JobsPage")} style={styles.navItem}>
+    <Icon name="briefcase" size={24} color="#000" />
+    <Text style={styles.navText}>Jobs</Text>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={() => navigation.navigate("employeeMessages")} style={styles.navItem}>
+    <Icon name="message-circle" size={24} color="#000" />
+    <Text style={styles.navText}>Messages</Text>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={() => navigation.navigate("employeePayment")} style={styles.navItem}>
+    <Icon name="dollar-sign" size={24} color="#000" />
+    <Text style={styles.navText}>Payments</Text>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={() => navigation.navigate("employeeProfile")} style={styles.navItem}>
+    <Icon name="user" size={24} color="#000" />
+    <Text style={styles.navText}>Profile</Text>
+  </TouchableOpacity>
+</View>
+
     </View>
   );
 }
@@ -103,8 +110,24 @@ const styles = StyleSheet.create({
   jobLocation: { fontSize: 14, color: "#888", marginVertical: 8 },
   jobDescription: { fontSize: 14, color: "#666", marginBottom: 10 },
   jobDates: { fontSize: 14, color: "#444", marginBottom: 10 },
-  addToCartButton: { backgroundColor: "#6C63FF", paddingVertical: 8, borderRadius: 5, alignItems: "center" },
+  addToCartButton: { backgroundColor: "#1980e6", paddingVertical: 8, borderRadius: 5, alignItems: "center" },
   addToCartText: { color: "#FFF", fontWeight: "bold" },
   noJobsText: { fontSize: 16, color: "#888", textAlign: "center", marginTop: 50 },
   bottomNav: { flexDirection: "row", justifyContent: "space-around", alignItems: "center", padding: 10, backgroundColor: "#FFF", borderTopWidth: 1, borderTopColor: "#DDD", position: "absolute", bottom: 0, left: 0, right: 0 },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#FFF",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#E4E4E4",
+  },
+  navItem: {
+    alignItems: "center",
+  },
+  navText: {
+    fontSize: 12,
+    color: "#000",
+    marginTop: 4,
+  },
 });

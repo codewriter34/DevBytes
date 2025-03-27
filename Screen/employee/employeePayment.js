@@ -50,7 +50,9 @@ export default function EmployeePaymentPage() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.transactionCard}>
-            <Text style={styles.transactionText}>{item.amount} - {item.method}</Text>
+            <Text style={styles.transactionText}>
+              {item.amount} - {item.method}
+            </Text>
             <Text style={styles.transactionDate}>{item.date}</Text>
             <Text style={[styles.status, styles[item.status.toLowerCase()]]}>{item.status}</Text>
           </View>
@@ -65,12 +67,12 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 20 },
   balanceCard: { backgroundColor: "#fff", padding: 20, borderRadius: 10, marginBottom: 20, alignItems: "center" },
   balanceText: { fontSize: 16, color: "#555" },
-  balanceAmount: { fontSize: 22, fontWeight: "bold", color: "#000", marginTop: 5 },
-  withdrawButton: { backgroundColor: "#1980e6", padding: 12, borderRadius: 10, alignItems: "center", marginBottom: 20 },
+  balanceAmount: { fontSize: 24, fontWeight: "bold", color: "#000", marginTop: 5 },
+  withdrawButton: { backgroundColor: "#1980e6", padding: 16, borderRadius: 10, alignItems: "center", marginBottom: 20 },
   withdrawText: { color: "#fff", fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
   paymentMethodsContainer: { flexDirection: "row", marginBottom: 20, paddingVertical: 10 },
-  methodButton: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10, marginHorizontal: 8, alignItems: "center" },
+  methodButton: { paddingVertical: 16, paddingHorizontal: 20, borderRadius: 10, marginHorizontal: 10, alignItems: "center" },
   methodText: { fontSize: 14, fontWeight: "bold", color: "#fff" },
   transactionCard: { backgroundColor: "#fff", padding: 16, borderRadius: 8, marginBottom: 10 },
   transactionText: { fontSize: 16, color: "#333" },

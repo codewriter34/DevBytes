@@ -42,7 +42,7 @@ export default function LoginPage({ navigation }) {
           navigation.replace("EmployerDashboard");
         } else if (role === "employee") {
           Alert.alert("Welcome Employee!");
-          navigation.replace("EmployeeDashboard");
+          navigation.navigate("employeeHome");  // ✅ Works better for your setup
         } else {
           Alert.alert("Role Not Found", "Please contact support.");
         }
@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     alignSelf: 'center',
     marginBottom: 30,
+    color:'#4285F4',
   },
   formGroup: {
     marginBottom: 15,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loginButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#4285F4',
     paddingVertical: 12,
     borderRadius: 15,
     alignItems: 'center',
