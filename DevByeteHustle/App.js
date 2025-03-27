@@ -7,6 +7,10 @@ import LoginScreen from "./Screen/LoginScreen";
 import EmployerHome from "./Screen/employer/employerHome";
 import PostJobScreen from "./Screen/employer/postJobScreen";
 import EmployeeHome from "./Screen/employee/employeeHome";
+import AdminHome from "./Screen/admin/AdminHome";
+import KYCVerifications from "./Screen/admin/KYCVerifications";
+
+
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +23,10 @@ export default function App() {
         <Stack.Screen name="EmployeeDashboard" component={EmployeeHome} />
         <Stack.Screen name="EmployerDashboard" component={EmployerHome} />
         <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
+
+        <Stack.Screen name="AdminDashboard" component={AdminHome} />
+        <Stack.Screen name="KYCVerifications" component={KYCVerifications} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

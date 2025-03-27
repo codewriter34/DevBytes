@@ -39,6 +39,9 @@ export default function LoginPage({ navigation }) {
         } else if (role === 'employee') {
           Alert.alert("Welcome Employee!");
           navigation.navigate('EmployeeDashboard');
+        } else if (role === 'admin') {
+          Alert.alert("Welcome Admin!");
+          navigation.navigate('AdminDashboard');
         } else {
           Alert.alert("Role Not Found", "Contact Support for Assistance.");
         }
